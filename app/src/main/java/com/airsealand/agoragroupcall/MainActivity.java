@@ -1,5 +1,8 @@
 package com.airsealand.agoragroupcall;
 
+import android.content.res.Configuration;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.Manifest;
@@ -11,6 +14,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.Rational;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -21,6 +25,7 @@ import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
 import io.agora.rtc.Constants;
+import android.app.PictureInPictureParams;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,18 +55,37 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void setupRemoteVideo(int uid) {
-        FrameLayout container = findViewById(R.id.remote_video_view_container);
+//    @Override
+//    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig){
+//        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+//
+//        FrameLayout container = findViewById(R.id.local_video_view_container);
+//        SurfaceView surfaceView = (SurfaceView) container.getChildAt(0);
+//
+//        surfaceView.setZOrderMediaOverlay(!isInPictureInPictureMode);
+//        surfaceView.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
+//        container.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
+//    }
 
-        if (container.getChildCount() >= 1) {
-            return;
-        }
-        SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
+//    @RequiresApi(api = Build.VERSION_CODES.N)
+//    @Override
+//    public void onResume(){
+//        super.onResume();
+//
+//        if (isInPictureInPictureMode()){
+//
+//        }else{
+//
+//        }
+//    }
 
-        container.addView(surfaceView);
-        mRtcEngine.setupRemoteVideo(new VideoCanvas(surfaceView,VideoCanvas.RENDER_MODE_ADAPTIVE,uid));
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
 
-        surfaceView.setTag(uid);
+        leaveChannel();
+        RtcEngine.destroy();
+        mRtcEngine = null;
     }
 
 
@@ -72,10 +96,8 @@ public class MainActivity extends AppCompatActivity {
         if (checkSelfPermission(REQUESTED_PERMISSIONS[0], PERMISSION_REQ_ID) &&
                 checkSelfPermission(REQUESTED_PERMISSIONS[1], PERMISSION_REQ_ID) &&
                 checkSelfPermission(REQUESTED_PERMISSIONS[2], PERMISSION_REQ_ID)) {
-            initializeRtcEngine();
+            initAgoraEngineAndJoinChannel();
         }
-        
-
 
 
     }
@@ -95,27 +117,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupVideoProfile() {
-         mRtcEngine.enableAudio();
-         mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_240P_3,false);
+         mRtcEngine.enableVideo();
+         mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P,false);
+    }
+
+    private void initAgoraEngineAndJoinChannel() {
+        initializeRtcEngine();
+        setupVideoProfile();
+        setupLocalVideo();
+        joinChannel();
+        enableVideo();
     }
 
     private void initializeRtcEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id),mRtcEventHandler);
-            setChannelProfile();
-            enableVideo();
-            joinRoom();
-            localVideoConfig();
 
-            setupVideoProfile();
+
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("AGORA",e.getMessage());
         }
     }
 
     private void enableVideo() {
         mRtcEngine.enableVideo();
-        //setVideoEncoderConfiguration();
+
     }
 
 //    private void setVideoEncoderConfiguration() {
@@ -134,11 +160,11 @@ public class MainActivity extends AppCompatActivity {
         mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_COMMUNICATION);
     }
 
-    private void joinRoom() {
+    private void joinChannel() {
          mRtcEngine.joinChannel(null, "test", null,0);
     }
 
-    private void localVideoConfig(){
+    private void setupLocalVideo(){
          FrameLayout container = findViewById(R.id.local_video_view_container);
 
          SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
@@ -186,7 +212,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onEncCallClicked(View view) {
-        mRtcEngine.leaveChannel();
         finish();
     }
+
+    private void setupRemoteVideo(int uid) {
+
+        FrameLayout container = findViewById(R.id.remote_video_view_container);
+
+        if (container.getChildCount() >= 1) {
+            return;
+        }
+        SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
+
+        container.addView(surfaceView);
+        mRtcEngine.setupRemoteVideo(new VideoCanvas(surfaceView,VideoCanvas.RENDER_MODE_ADAPTIVE,uid));
+
+        surfaceView.setTag(uid);
+        View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk); // optional UI
+        tipMsg.setVisibility(View.GONE);
+    }
+
+    private void leaveChannel() {
+        mRtcEngine.leaveChannel();
+    }
+    private void onRemoteUserLeft() {
+        FrameLayout container = findViewById(R.id.remote_video_view_container);
+        container.removeAllViews();
+
+        View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk);
+        tipMsg.setVisibility(View.VISIBLE);
+    }
+//    @RequiresApi(api = Build.VERSION_CODES.O)
+//    private void onEnterIntoPIPClicked(View view){
+//        PictureInPictureParams params = new PictureInPictureParams.Builder().setAspectRatio(new Rational(10, 16)).build();
+//        enterPictureInPictureMode(params);
+//    }
+
+
 }
