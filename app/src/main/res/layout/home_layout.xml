@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Framelayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/remote_video_view_container1"
+    android:layout_width="100dp"
+    android:layout_height="match_parent"
+    android:background="@android:color/white" />

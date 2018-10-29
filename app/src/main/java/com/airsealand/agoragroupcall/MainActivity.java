@@ -1,5 +1,8 @@
 package com.airsealand.agoragroupcall;
 
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
@@ -16,18 +19,27 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Rational;
 import android.view.SurfaceView;
+import android.view.ViewGroup;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+
 import android.widget.Toast;
+
+import java.util.ArrayList;
 import java.util.Random;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
 import io.agora.rtc.Constants;
 import android.app.PictureInPictureParams;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    List<newRemoteVideo> remoteUsers = new ArrayList<>();
+
+
 
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -50,34 +62,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onUserJoined(int uid, int elapsed) {
+        public void onUserJoined(final int uid, int elapsed) {
             super.onUserJoined(uid, elapsed);
+
+            remoteUsers.add(new newRemoteVideo(uid));
+            RecyclerView myrv = (RecyclerView) findViewById(R.id.recyclerview_id);
+            RecyclerViewAdapter myAdapter = new RecyclerViewAdapter(this, remoteUsers);
+            myrv.setLayoutManager(new GridLayoutManager(this,3));
+            myrv.setAdapter(myAdapter);
         }
     };
 
-//    @Override
-//    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig){
-//        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-//
-//        FrameLayout container = findViewById(R.id.local_video_view_container);
-//        SurfaceView surfaceView = (SurfaceView) container.getChildAt(0);
-//
-//        surfaceView.setZOrderMediaOverlay(!isInPictureInPictureMode);
-//        surfaceView.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
-//        container.setVisibility(isInPictureInPictureMode ? View.GONE : View.VISIBLE);
-//    }
 
-//    @RequiresApi(api = Build.VERSION_CODES.N)
-//    @Override
-//    public void onResume(){
-//        super.onResume();
-//
-//        if (isInPictureInPictureMode()){
-//
-//        }else{
-//
-//        }
-//    }
 
     @Override
     protected void onDestroy() {
@@ -116,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+
     private void setupVideoProfile() {
          mRtcEngine.enableVideo();
          mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P,false);
@@ -127,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
         setupLocalVideo();
         joinChannel();
         enableVideo();
+        setChannelProfile();
     }
 
     private void initializeRtcEngine() {
@@ -143,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         mRtcEngine.enableVideo();
 
     }
-
+//
 //    private void setVideoEncoderConfiguration() {
 //        VideoEncoderConfiguration.ORIENTATION_MODE
 //                orientationMode =
@@ -228,8 +226,11 @@ public class MainActivity extends AppCompatActivity {
         mRtcEngine.setupRemoteVideo(new VideoCanvas(surfaceView,VideoCanvas.RENDER_MODE_ADAPTIVE,uid));
 
         surfaceView.setTag(uid);
+
         View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk); // optional UI
         tipMsg.setVisibility(View.GONE);
+
+
     }
 
     private void leaveChannel() {
@@ -242,11 +243,7 @@ public class MainActivity extends AppCompatActivity {
         View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk);
         tipMsg.setVisibility(View.VISIBLE);
     }
-//    @RequiresApi(api = Build.VERSION_CODES.O)
-//    private void onEnterIntoPIPClicked(View view){
-//        PictureInPictureParams params = new PictureInPictureParams.Builder().setAspectRatio(new Rational(10, 16)).build();
-//        enterPictureInPictureMode(params);
-//    }
+
 
 
 }
